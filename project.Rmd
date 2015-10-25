@@ -3,6 +3,16 @@ title: "Human Activity Recognition using Weight Lifting Exercise Dataset"
 output: html_document
 ---
 
+In this study, we predict how well a weight lifting exercise (unilateral dumbbell biceps curl) is conducted by analyzing the accelerometer data.
+The quality of the exercise is recorded as five different classes of A, B, C, D, E.
+Class A is the exactly correct exercise, and the others correspond to some deviation from it.
+
+The original data is available from http://groupware.les.inf.puc-rio.br/har, but the datasets used are downloaded from the course page
+
+pmldata: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+pmltest: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
 We first delete all the columns without much informative value and transform inappropriate factor variables to numerical variables.
 We also remove the columns with excessive number of missing values.
 This data manipulation step is carried out in an identifcal fashion to both datasets in order to maintain the consistency.
@@ -39,7 +49,7 @@ for(i in names(pmldata[,2:ncol(pmldata)-1])){
 ```
 
 We then partition the dataset with known 'classe' into training (75%) and testing (25%) sets, and remove highly correlated variabless.
-We make use of "createDataPartition" and "findCorrelation" functions in the "caret" package for this step.
+We make use of *createDataPartition* and *findCorrelation* functions in the **caret** package for this step.
 
 ```{r cache=TRUE}
 set.seed(128)
@@ -53,8 +63,8 @@ pmltest <- pmltest[,-related]
 ```
 
 We will be using Random Forest model that provides excellent accuracy at the cost of slow training.
-We employ the simple preprocessing of centering and scaling, and tune the Random Forest key parameter 'mtry' (number of variables randomly sampled as candidates at each split) for the best accuracy using repeated 3-fold cross-validations.
-We chose k = 3 because it results in a similar sized test samples as the testing set (about 5,000 rows).
+We employ the simple preprocessing of centering and scaling, and tune the Random Forest key parameter "mtry"" (number of variables randomly sampled as candidates at each split) for the best accuracy using repeated 3-fold cross-validations.
+We chose K = 3 because it results in a similar sized test samples as the testing set (about 5,000 rows).
 
 ```{r cache=TRUE}
 rffit <- train(classe~., data=training, method="rf", prox=TRUE,
@@ -87,3 +97,5 @@ pml_write_files = function(x){
 }
 pml_write_files(prediction)
 ```
+
+After submission of these twenty predictions, the accuracy turns out to be 100% which is closer to the expected accuracy of ~99% than having one or more predictions wrong.

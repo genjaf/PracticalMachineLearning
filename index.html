@@ -64,6 +64,10 @@ img {
 </div>
 
 
+<p>In this study, we predict how well a weight lifting exercise (unilateral dumbbell biceps curl) is conducted by analyzing the accelerometer data. The quality of the exercise is recorded as five different classes of A, B, C, D, E. Class A is the exactly correct exercise, and the others correspond to some deviation from it.</p>
+<p>The original data is available from <a href="http://groupware.les.inf.puc-rio.br/har" class="uri">http://groupware.les.inf.puc-rio.br/har</a>, but the datasets used are downloaded from the course page</p>
+<p>pmldata: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv" class="uri">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a></p>
+<p>pmltest: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv" class="uri">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a></p>
 <p>We first delete all the columns without much informative value and transform inappropriate factor variables to numerical variables. We also remove the columns with excessive number of missing values. This data manipulation step is carried out in an identifcal fashion to both datasets in order to maintain the consistency.</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(caret))
 suppressPackageStartupMessages(library(randomForest))
@@ -93,7 +97,7 @@ for(i in names(pmldata[,2:ncol(pmldata)-1])){
     pmltest[[i]] &lt;- NULL
   }
 }</code></pre>
-<p>We then partition the dataset with known ‘classe’ into training (75%) and testing (25%) sets, and remove highly correlated variabless. We make use of “createDataPartition” and “findCorrelation” functions in the “caret” package for this step.</p>
+<p>We then partition the dataset with known ‘classe’ into training (75%) and testing (25%) sets, and remove highly correlated variabless. We make use of <em>createDataPartition</em> and <em>findCorrelation</em> functions in the <strong>caret</strong> package for this step.</p>
 <pre class="r"><code>set.seed(128)
 inTrain &lt;- createDataPartition(pmldata$classe, p=.75, list=FALSE)
 training &lt;- pmldata[inTrain,]
@@ -102,7 +106,7 @@ related &lt;- findCorrelation(cor(training[,2:(ncol(training)-1)]))
 training &lt;- training[,-related]
 testing &lt;- testing[,-related]
 pmltest &lt;- pmltest[,-related]</code></pre>
-<p>We will be using Random Forest model that provides excellent accuracy at the cost of slow training. We employ the simple preprocessing of centering and scaling, and tune the Random Forest key parameter ‘mtry’ (number of variables randomly sampled as candidates at each split) for the best accuracy using repeated 3-fold cross-validations. We chose k = 3 because it results in a similar sized test samples as the testing set (about 5,000 rows).</p>
+<p>We will be using Random Forest model that provides excellent accuracy at the cost of slow training. We employ the simple preprocessing of centering and scaling, and tune the Random Forest key parameter “mtry”&quot; (number of variables randomly sampled as candidates at each split) for the best accuracy using repeated 3-fold cross-validations. We chose K = 3 because it results in a similar sized test samples as the testing set (about 5,000 rows).</p>
 <pre class="r"><code>rffit &lt;- train(classe~., data=training, method=&quot;rf&quot;, prox=TRUE,
                preprocess=c(&quot;center&quot;,&quot;scale&quot;),
                trControl=trainControl(method=&quot;repeatedcv&quot;, number=3, repeats=5))
@@ -200,6 +204,7 @@ pml_write_files = function(x){
   }
 }
 pml_write_files(prediction)</code></pre>
+<p>After submission of these twenty predictions, the accuracy turns out to be 100% which is closer to the expected accuracy of ~99% than having one or more predictions wrong.</p>
 
 
 </div>
