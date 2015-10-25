@@ -1,0 +1,6 @@
+*.csv
+projectsols.txt
+project_cache/html/__packages
+*.RData
+*.rdx
+*.rdb
