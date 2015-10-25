@@ -1,0 +1,89 @@
+---
+title: "Human Activity Recognition using Weight Lifting Exercise Dataset"
+output: html_document
+---
+
+We first delete all the columns without much informative value and transform inappropriate factor variables to numerical variables.
+We also remove the columns with excessive number of missing values.
+This data manipulation step is carried out in an identifcal fashion to both datasets in order to maintain the consistency.
+
+```{r cache=TRUE}
+suppressPackageStartupMessages(library(caret))
+suppressPackageStartupMessages(library(randomForest))
+pmldata <- read.csv("pml-training.csv")
+pmltest <- read.csv("pml-testing.csv")
+pmldata <- pmldata[,c(2,8:ncol(pmldata))]
+pmltest <- pmltest[,c(2,8:ncol(pmltest))]
+for(i in names(pmldata[,2:(ncol(pmldata)-1)])){
+  if(is.factor(pmldata[[i]])){
+    if(nlevels(pmldata[[i]]) < 5){
+      pmldata[[i]] <- NULL
+      pmltest[[i]] <- NULL
+    }
+    else{
+      pmldata[[i]] <- suppressWarnings(as.numeric(levels(pmldata[[i]]))[pmldata[[i]]])
+      pmltest[[i]] <- suppressWarnings(as.numeric(levels(pmltest[[i]]))[pmltest[[i]]])
+    }
+  }
+  else{
+    pmldata[[i]] <- as.numeric(pmldata[[i]])
+    pmltest[[i]] <- as.numeric(pmltest[[i]])
+  }
+}
+for(i in names(pmldata[,2:ncol(pmldata)-1])){
+  if(sum(is.na(pmldata[[i]]))>0.9*nrow(pmldata)){
+    pmldata[[i]] <- NULL
+    pmltest[[i]] <- NULL
+  }
+}
+```
+
+We then partition the dataset with known 'classe' into training (75%) and testing (25%) sets, and remove highly correlated variabless.
+We make use of "createDataPartition" and "findCorrelation" functions in the "caret" package for this step.
+
+```{r cache=TRUE}
+set.seed(128)
+inTrain <- createDataPartition(pmldata$classe, p=.75, list=FALSE)
+training <- pmldata[inTrain,]
+testing <- pmldata[-inTrain,]
+related <- findCorrelation(cor(training[,2:(ncol(training)-1)]))
+training <- training[,-related]
+testing <- testing[,-related]
+pmltest <- pmltest[,-related]
+```
+
+We will be using Random Forest model that provides excellent accuracy at the cost of slow training.
+We employ the simple preprocessing of centering and scaling, and tune the Random Forest key parameter 'mtry' (number of variables randomly sampled as candidates at each split) for the best accuracy using repeated 3-fold cross-validations.
+We chose k = 3 because it results in a similar sized test samples as the testing set (about 5,000 rows).
+
+```{r cache=TRUE}
+rffit <- train(classe~., data=training, method="rf", prox=TRUE,
+               preprocess=c("center","scale"),
+               trControl=trainControl(method="repeatedcv", number=3, repeats=5))
+rffit
+confusionMatrix(predict(rffit, testing), testing$classe)
+```
+
+The best accuracy is achieved at "mtry" = 25, and kappa metric seems to remain very high as well.
+The tuned performance is quite satisfactory, so we do not test other machine learning algorithms in this report.
+However, having a smaller "mtry" value might decrease these metrics' SD at a very marginal decrease in the metrics themselves.
+We note that the 3-fold cross-validation accuracy of 98.9% is very close to the out-of-sample testing accuracy 99.1%, so expect that this accuracy rate also will hold for the dataset with unknown classe.
+In contrast, the in-sample accuracy of the final model is 100% as can be seen below.
+
+```{r cache=TRUE}
+confusionMatrix(predict(rffit, training), training$classe)
+```
+
+We finally employ the trained model to predict the ultimate hold-out set with twenty rows.
+
+```{r eval=FALSE}
+prediction <- predict(rffit, pmltest)
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(prediction)
+```
